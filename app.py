@@ -37,7 +37,7 @@ collections.Callable = collections.abc.Callable
 #----------------------------------------------------------------------------#
 # Models.
 #----------------------------------------------------------------------------#
-class Venue(db.Model):
+class Venue(db.Model): # Venue Model
     __tablename__ = 'venue'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -58,7 +58,7 @@ class Venue(db.Model):
         return f'<Venue {self.id} {self.name}>'
 
 
-class Artist(db.Model):
+class Artist(db.Model):             # Artist Model
     __tablename__ = 'artist'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -78,7 +78,7 @@ class Artist(db.Model):
 
 
 # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
-class Show(db.Model):
+class Show(db.Model):       # Show Model
     __tablename__ = 'show'
     id = db.Column(db.Integer, primary_key=True)
     start_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)    
@@ -89,17 +89,17 @@ class Show(db.Model):
         return f'<Show {self.id} {self.start_time} artist_id={self.artist_id} venue_id={self.venue_id}>'
 
 
-class Genre(db.Model):
+class Genre(db.Model):      # Genre Model
     __tablename__ = 'genre'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
 
-artist_genre = db.Table('artist_genre',
+artist_genre = db.Table('artist_genre',             # Table Genre pour Atist 
     db.Column('genre_id', db.Integer, db.ForeignKey('genre.id'), primary_key=True),
     db.Column('artist_id', db.Integer, db.ForeignKey('artist.id'), primary_key=True)
 )
 
-venue_genre = db.Table('venue_genre',
+venue_genre = db.Table('venue_genre',       # Table Genre pour Venue
     db.Column('genre_id', db.Integer, db.ForeignKey('genre.id'), primary_key=True),
     db.Column('venue_id', db.Integer, db.ForeignKey('venue.id'), primary_key=True)
 )
@@ -133,7 +133,7 @@ def index():
 #  Venues
 #  ----------------------------------------------------------------
 
-@app.route('/venues')
+@app.route('/venues')   # Venue View 
 def venues():
     
     venues = Venue.query.all()
@@ -170,7 +170,7 @@ def venues():
     return render_template('pages/venues.html', areas=data)
 
 
-@app.route('/venues/search', methods=['POST'])
+@app.route('/venues/search', methods=['POST'])  # Recherche de Venue
 def search_venues():
     search_term = request.form.get('search_term', '').strip()
     venues = Venue.query.filter(Venue.name.ilike('%' + search_term + '%')).all()   
@@ -196,7 +196,7 @@ def search_venues():
     return render_template('pages/search_venues.html', results=response, search_term=search_term)
 
 
-@app.route('/venues/<int:venue_id>')
+@app.route('/venues/<int:venue_id>')    # Venue individuel selection
 def show_venue(venue_id):
 
     venue = Venue.query.get(venue_id)   
@@ -259,7 +259,7 @@ def create_venue_form():
   return render_template('forms/new_venue.html', form=form)
 
 
-@app.route('/venues/create', methods=['POST'])
+@app.route('/venues/create', methods=['POST'])      # Creation de Venue
 def create_venue_submission():
     form = VenueForm()
 
@@ -571,7 +571,7 @@ def edit_venue_submission(venue_id):
         error = False
         try:
             venue = Venue.query.get(venue_id)
-            
+
             venue.name = name
             venue.city = city
             venue.state = state
