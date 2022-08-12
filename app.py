@@ -138,34 +138,34 @@ def venues():
     
     venues = Venue.query.all()
     data = []   
-    cities_states = set()
+    cstate_data = set()
 
     for venue in venues:
-        cities_states.add( (venue.city, venue.state) )  # Add tuple
+        cstate_data.add( (venue.city, venue.state) )  
     
-    cities_states = list(cities_states)
-    cities_states.sort(key=itemgetter(1,0))   
+    cstate_data = list(cstate_data)
+    cstate_data.sort(key=itemgetter(1,0))   
 
     now = datetime.now()    
-    for loc in cities_states:
-        venues_list = []
+    for one_cstate in cstate_data:
+        v_list = []
         for venue in venues:
-            if (venue.city == loc[0]) and (venue.state == loc[1]):
+            if (venue.city == one_cstate[0]) and (venue.state == one_cstate[1]):
                 venue_shows = Show.query.filter_by(venue_id=venue.id).all()
                 num_upcoming = 0
                 for show in venue_shows:
                     if show.start_time > now:
                         num_upcoming += 1
 
-                venues_list.append({
+                v_list.append({
                     "id": venue.id,
                     "name": venue.name,
                     "num_upcoming_shows": num_upcoming
                 })
         data.append({
-            "city": loc[0],
-            "state": loc[1],
-            "venues": venues_list
+            "city": one_cstate[0],
+            "state": one_cstate[1],
+            "venues": v_list
         })
     return render_template('pages/venues.html', areas=data)
 
@@ -174,7 +174,7 @@ def venues():
 def search_venues():
     search_term = request.form.get('search_term', '').strip()
     venues = Venue.query.filter(Venue.name.ilike('%' + search_term + '%')).all()   
-    venue_list = []
+    v_list = []
     now = datetime.now()
     for venue in venues:
         venue_shows = Show.query.filter_by(venue_id=venue.id).all()
@@ -183,7 +183,7 @@ def search_venues():
             if show.start_time > now:
                 num_upcoming += 1
 
-        venue_list.append({
+        v_list.append({
             "id": venue.id,
             "name": venue.name,
             "num_upcoming_shows": num_upcoming 
@@ -191,7 +191,7 @@ def search_venues():
 
     response = {
         "count": len(venues),
-        "data": venue_list
+        "data": v_list
     }
     return render_template('pages/search_venues.html', results=response, search_term=search_term)
 
@@ -200,7 +200,7 @@ def search_venues():
 def show_venue(venue_id):
 
     venue = Venue.query.get(venue_id)   
-    print(venue)
+
     if not venue:
         return redirect(url_for('index'))
     else:
@@ -283,23 +283,22 @@ def create_venue_submission():
     else:
         error = False
         try:
-            new_venue = Venue(name=name, city=city, state=state, address=address, phone=phone, \
+            nw_venue = Venue(name=name, city=city, state=state, address=address, phone=phone, \
                 seeking_talent=seeking_talent, seeking_description=seeking_description, image_link=image_link, \
                 website_link=website_link, facebook_link=facebook_link)
             for genre in genres:
-                fetch_genre = Genre.query.filter_by(name=genre).one_or_none()  
-                if fetch_genre:
-                    new_venue.genres.append(fetch_genre)
+                get_genre = Genre.query.filter_by(name=genre).one_or_none()  
+                if get_genre:
+                    nw_venue.genres.append(get_genre)
                 else:
-                    new_genre = Genre(name=genre)
-                    db.session.add(new_genre)
-                    new_venue.genres.append(new_genre)  
+                    nw_genre = Genre(name=genre)
+                    db.session.add(nw_genre)
+                    nw_venue.genres.append(nw_genre)  
 
-            db.session.add(new_venue)
+            db.session.add(nw_venue)
             db.session.commit()
         except Exception as e:
             error = True
-            print(f'Exception "{e}" in create_venue_submission()')
             db.session.rollback()
         finally:
             db.session.close()
@@ -310,7 +309,6 @@ def create_venue_submission():
             return redirect(url_for('index'))
         else:
             flash('An error occurred. Venue ' + name + ' could not be listed.')
-            print("Error in create_venue_submission()")
             abort(500)
 
 
@@ -332,7 +330,6 @@ def delete_venue(venue_id):
             db.session.close()
         if error:
             flash(f'An error occurred deleting venue {venue_name}.')
-            print("Error in delete_venue()")
             abort(500)
         else:
             return jsonify({
@@ -387,7 +384,6 @@ def search_artists():
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
     artist = Artist.query.get(artist_id)   
-    print(artist)
     if not artist:
         return redirect(url_for('index'))
     else:
@@ -484,7 +480,7 @@ def edit_artist_submission(artist_id):
         return redirect(url_for('edit_artist_submission', artist_id=artist_id))
 
     else:
-        error_in_update = False
+        error = False
 
         try:
             artist = Artist.query.get(artist_id)
@@ -500,28 +496,26 @@ def edit_artist_submission(artist_id):
             artist.genres = []
 
             for genre in genres:
-                fetch_genre = Genre.query.filter_by(name=genre).one_or_none()  
-                if fetch_genre:
-                    artist.genres.append(fetch_genre)
+                get_genre = Genre.query.filter_by(name=genre).one_or_none()  
+                if get_genre:
+                    artist.genres.append(get_genre)
 
                 else:
-                    new_genre = Genre(name=genre)
-                    db.session.add(new_genre)
-                    artist.genres.append(new_genre)  
+                    nw_genre = Genre(name=genre)
+                    db.session.add(nw_genre)
+                    artist.genres.append(nw_genre)  
             db.session.commit()
         except Exception as e:
-            error_in_update = True
-            print(f'Exception "{e}" in edit_artist_submission()')
+            error = True
             db.session.rollback()
         finally:
             db.session.close()
 
-        if not error_in_update:
+        if not error:
             flash('Artist ' + request.form['name'] + ' was successfully updated!')
             return redirect(url_for('show_artist', artist_id=artist_id))
         else:
             flash('An error occurred. Artist ' + name + ' could not be updated.')
-            print("Error in edit_artist_submission()")
             abort(500)
 
 
@@ -574,9 +568,10 @@ def edit_venue_submission(venue_id):
         return redirect(url_for('edit_venue_submission', venue_id=venue_id))
 
     else:
-        error_in_update = False
+        error = False
         try:
             venue = Venue.query.get(venue_id)
+            
             venue.name = name
             venue.city = city
             venue.state = state
@@ -589,28 +584,26 @@ def edit_venue_submission(venue_id):
             venue.facebook_link = facebook_link
             venue.genres = []
             for genre in genres:
-                fetch_genre = Genre.query.filter_by(name=genre).one_or_none() 
-                if fetch_genre:
-                    venue.genres.append(fetch_genre)
+                get_genre = Genre.query.filter_by(name=genre).one_or_none() 
+                if get_genre:
+                    venue.genres.append(get_genre)
 
                 else:
-                    new_genre = Genre(name=genre)
-                    db.session.add(new_genre)
-                    venue.genres.append(new_genre)  
+                    nw_genre = Genre(name=genre)
+                    db.session.add(nw_genre)
+                    venue.genres.append(nw_genre)  
             db.session.commit()
         except Exception as e:
-            error_in_update = True
-            print(f'Exception "{e}" in edit_venue_submission()')
+            error = True
             db.session.rollback()
         finally:
             db.session.close()
 
-        if not error_in_update:
+        if not error:
             flash('Venue ' + request.form['name'] + ' was successfully updated!')
             return redirect(url_for('show_venue', venue_id=venue_id))
         else:
             flash('An error occurred. Venue ' + name + ' could not be updated.')
-            print("Error in edit_venue_submission()")
             abort(500)
 
 #  Create Artist
@@ -649,20 +642,19 @@ def create_artist_submission():
                 seeking_venue=seeking_venue, seeking_description=seeking_description, image_link=image_link, \
                 website_link=website_link, facebook_link=facebook_link)
             for genre in genres:
-                fetch_genre = Genre.query.filter_by(name=genre).one_or_none() 
-                if fetch_genre:
-                    new_artist.genres.append(fetch_genre)
+                get_genre = Genre.query.filter_by(name=genre).one_or_none() 
+                if get_genre:
+                    new_artist.genres.append(get_genre)
 
                 else:
-                    new_genre = Genre(name=genre)
-                    db.session.add(new_genre)
-                    new_artist.genres.append(new_genre)  
+                    nw_genre = Genre(name=genre)
+                    db.session.add(nw_genre)
+                    new_artist.genres.append(nw_genre)  
 
             db.session.add(new_artist)
             db.session.commit()
         except Exception as e:
             error = True
-            print(f'Exception "{e}" in create_artist_submission()')
             db.session.rollback()
         finally:
             db.session.close()
@@ -672,7 +664,6 @@ def create_artist_submission():
             return redirect(url_for('index'))
         else:
             flash('An error occurred. Artist ' + name + ' could not be listed.')
-            print("Error in create_artist_submission()")
             abort(500)
 
 @app.route('/artists/<artist_id>/delete', methods=['GET'])
@@ -681,19 +672,18 @@ def delete_artist(artist_id):
     if not artist:
         return redirect(url_for('index'))
     else:
-        error_on_delete = False
+        error = False
         artist_name = artist.name
         try:
             db.session.delete(artist)
             db.session.commit()
         except:
-            error_on_delete = True
+            error = True
             db.session.rollback()
         finally:
             db.session.close()
-        if error_on_delete:
+        if error:
             flash(f'An error occurred deleting artist {artist_name}.')
-            print("Error in delete_artist()")
             abort(500)
         else:
             return jsonify({
@@ -745,14 +735,12 @@ def create_show_submission():
         db.session.commit()
     except:
         error = True
-        # print(f'Exception "{e}" in create_show_submission()')
         db.session.rollback()
     finally:
         db.session.close()
 
     if error:
         flash(f'An error occurred.  Show could not be listed.')
-        print("Error in create_show_submission()")
     else:
         flash('Show was successfully listed!')
     
