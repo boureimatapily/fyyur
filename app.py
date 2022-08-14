@@ -18,6 +18,8 @@ import re
 from operator import itemgetter 
 from extensions import csrf
 import collections
+from models import Venue, venue_genre, Artist, artist_genre, Show, Genre
+from models import db    # importing db from models
 
 
 #----------------------------------------------------------------------------#
@@ -27,83 +29,12 @@ import collections
 app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object('config')
-db = SQLAlchemy(app)
+# db = SQLAlchemy(app)
+db.init_app(app)    #  initialized db
 migrate = Migrate(app, db)
 csrf.init_app(app)
 collections.Callable = collections.abc.Callable
 
-# TODO: connect to a local postgresql database
-
-#----------------------------------------------------------------------------#
-# Models.
-#----------------------------------------------------------------------------#
-class Venue(db.Model): # Venue Model
-    __tablename__ = 'venue'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    address = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    genres = db.relationship('Genre', secondary='venue_genre', backref=db.backref('venues'))
-    website_link = db.Column(db.String(120))
-    seeking_talent = db.Column(db.Boolean, default=False)
-    seeking_description = db.Column(db.String(120))
-    shows = db.relationship('Show', backref='venue', lazy=True)
-
-    def __repr__(self):
-        return f'<Venue {self.id} {self.name}>'
-
-
-class Artist(db.Model):             # Artist Model
-    __tablename__ = 'artist'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    genres = db.relationship('Genre', secondary='artist_genre', backref=db.backref('artists'))
-    website_link = db.Column(db.String(120))
-    seeking_venue = db.Column(db.Boolean, default=False)
-    seeking_description = db.Column(db.String(120))
-    shows = db.relationship('Show', backref='artist', lazy=True)
-
-    def __repr__(self):
-        return f'<Artist {self.id} {self.name}>'
-
-
-# TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
-class Show(db.Model):       # Show Model
-    __tablename__ = 'show'
-    id = db.Column(db.Integer, primary_key=True)
-    start_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)    
-    artist_id = db.Column(db.Integer, db.ForeignKey('artist.id'), nullable=False)  
-    venue_id = db.Column(db.Integer, db.ForeignKey('venue.id'), nullable=False)
-    
-    def __repr__(self):
-        return f'<Show {self.id} {self.start_time} artist_id={self.artist_id} venue_id={self.venue_id}>'
-
-
-class Genre(db.Model):      # Genre Model
-    __tablename__ = 'genre'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-
-artist_genre = db.Table('artist_genre',             # Table Genre pour Atist 
-    db.Column('genre_id', db.Integer, db.ForeignKey('genre.id'), primary_key=True),
-    db.Column('artist_id', db.Integer, db.ForeignKey('artist.id'), primary_key=True)
-)
-
-venue_genre = db.Table('venue_genre',       # Table Genre pour Venue
-    db.Column('genre_id', db.Integer, db.ForeignKey('genre.id'), primary_key=True),
-    db.Column('venue_id', db.Integer, db.ForeignKey('venue.id'), primary_key=True)
-)
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
 
@@ -312,7 +243,7 @@ def create_venue_submission():
             abort(500)
 
 
-@app.route('/venues/<venue_id>/delete', methods=['GET'])
+@app.route('/venues/<venue_id>/delete', methods=['GET'])    # delete venue 
 def delete_venue(venue_id):
     venue = Venue.query.get(venue_id)
     if not venue:
@@ -353,7 +284,7 @@ def artists():
     return render_template('pages/artists.html', artists=data)
 
 
-@app.route('/artists/search', methods=['POST'])
+@app.route('/artists/search', methods=['POST']) #search artist
 def search_artists():
     search_term = request.form.get('search_term', '').strip()
     artists = Artist.query.filter(Artist.name.ilike('%' + search_term + '%')).all()  
@@ -381,7 +312,7 @@ def search_artists():
 
 
 
-@app.route('/artists/<int:artist_id>')
+@app.route('/artists/<int:artist_id>')      #Select artist by id
 def show_artist(artist_id):
     artist = Artist.query.get(artist_id)   
     if not artist:
@@ -434,7 +365,7 @@ def show_artist(artist_id):
 #  Update
 #  ----------------------------------------------------------------
 
-@app.route('/artists/<int:artist_id>/edit', methods=['GET'])
+@app.route('/artists/<int:artist_id>/edit', methods=['GET'])    # edit single artist
 def edit_artist(artist_id):
     artist = Artist.query.get(artist_id)  
     if not artist:
@@ -519,7 +450,7 @@ def edit_artist_submission(artist_id):
             abort(500)
 
 
-@app.route('/venues/<int:venue_id>/edit', methods=['GET'])
+@app.route('/venues/<int:venue_id>/edit', methods=['GET'])  # edit single Venue
 def edit_venue(venue_id):
     venue = Venue.query.get(venue_id)  
     if not venue:
@@ -546,7 +477,7 @@ def edit_venue(venue_id):
 
 
 
-@app.route('/venues/<int:venue_id>/edit', methods=['POST'])
+@app.route('/venues/<int:venue_id>/edit', methods=['POST'])         # edit single Venue
 def edit_venue_submission(venue_id):
     form = VenueForm()
 
@@ -719,7 +650,7 @@ def create_shows():
   form = ShowForm()
   return render_template('forms/new_show.html', form=form)
 
-@app.route('/shows/create', methods=['POST'])
+@app.route('/shows/create', methods=['POST'])       # create show
 def create_show_submission():
     form = ShowForm()
 
